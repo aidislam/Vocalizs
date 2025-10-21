@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { FirebaseProvider } from '@/firebase';
+import { FirebaseClientProvider } from '@/firebase';
+import { Header } from '@/components/layout/header';
 
 export const metadata: Metadata = {
   title: 'Vocalize',
@@ -28,7 +29,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <FirebaseProvider>{children}</FirebaseProvider>
+        <FirebaseClientProvider>
+          <Header />
+          {children}
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>
