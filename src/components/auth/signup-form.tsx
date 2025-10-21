@@ -12,8 +12,10 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   OAuthProvider,
+  User,
 } from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +38,8 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const formSchema = z
   .object({
@@ -56,6 +60,7 @@ export function SignupForm() {
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
 
@@ -82,6 +87,26 @@ export function SignupForm() {
     );
   }
 
+  const saveUserProfile = (user: User) => {
+    if (!firestore) return;
+    const userRef = doc(firestore, 'users', user.uid);
+    const profileData = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      emailVerified: user.emailVerified,
+    };
+    setDoc(userRef, profileData, { merge: true }).catch(serverError => {
+      const permissionError = new FirestorePermissionError({
+        path: userRef.path,
+        operation: 'write',
+        requestResourceData: profileData,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    });
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     if (!auth) {
@@ -94,7 +119,12 @@ export function SignupForm() {
       return;
     }
     try {
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
+      saveUserProfile(userCredential.user);
       toast({
         title: 'Account Created',
         description: 'Welcome! You are now logged in.',
@@ -126,7 +156,8 @@ export function SignupForm() {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      saveUserProfile(userCredential.user);
       toast({
         title: 'Sign-up Successful',
         description: 'Welcome!',
@@ -155,7 +186,8 @@ export function SignupForm() {
     setIsAppleLoading(true);
     const provider = new OAuthProvider('apple.com');
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      saveUserProfile(userCredential.user);
       toast({
         title: 'Sign-up Successful',
         description: 'Welcome!',
