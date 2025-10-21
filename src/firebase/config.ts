@@ -1,8 +1,10 @@
 export const firebaseConfig = {
-  "projectId": "studio-814518738-6a892",
-  "appId": "1:1006582407847:web:99e73bec43fec2c6e77182",
-  "apiKey": "AIzaSyAOwUyrC_ItsjmiiVaRkYPCNzKEu5V27Hw",
-  "authDomain": "studio-814518738-6a892.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "1006582407847"
+  apiKey: 'AIzaSyAWDt1G1F0B8KoJn95CAD8LchKIDtLhKsw',
+  authDomain: 'aid-islam-account.firebaseapp.com',
+  databaseURL: 'https://aid-islam-account-default-rtdb.firebaseio.com',
+  projectId: 'aid-islam-account',
+  storageBucket: 'aid-islam-account.firebasestorage.app',
+  messagingSenderId: '82633858382',
+  appId: '1:82633858382:web:ad9e6d99f4caf2bb0dd21f',
+  measurementId: 'G-S1FL4F8DWC',
 };
