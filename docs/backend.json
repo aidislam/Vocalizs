@@ -55,7 +55,8 @@
       "anonymous",
       "google.com",
       "apple.com",
-      "phone"
+      "phone",
+      "gamekit.com"
     ]
   },
   "firestore": {
