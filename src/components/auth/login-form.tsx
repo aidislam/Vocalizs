@@ -74,6 +74,15 @@ export function LoginForm() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Auth service not ready',
+        description: 'Please try again in a moment.',
+      });
+      setIsLoading(false);
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
@@ -96,6 +105,14 @@ export function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Auth service not ready',
+        description: 'Please try again in a moment.',
+      });
+      return;
+    }
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
@@ -117,6 +134,14 @@ export function LoginForm() {
   };
 
   const handleAppleSignIn = async () => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Auth service not ready',
+        description: 'Please try again in a moment.',
+      });
+      return;
+    }
     setIsAppleLoading(true);
     const provider = new OAuthProvider('apple.com');
     try {

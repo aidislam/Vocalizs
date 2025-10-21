@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -25,6 +26,14 @@ export function Header() {
   const { toast } = useToast();
 
   const handleLogout = async () => {
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Logout Failed',
+        description: 'Auth service not ready.',
+      });
+      return;
+    }
     try {
       await auth.signOut();
       toast({

@@ -1,42 +1,76 @@
 'use client';
 
-import { firebaseConfig } from '@/firebase/config';
+import { firebaseConfig, MASTER_AUTH_CONFIG } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { errorEmitter } from './error-emitter';
+import { FirestorePermissionError } from './errors';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
-    let firebaseApp;
+  const apps = getApps();
+  const defaultAppName = 'DEFAULT';
+  const authAppName = 'MasterAuth';
+
+  // Initialize Default App
+  let defaultApp = apps.find(app => app.name === defaultAppName);
+  if (!defaultApp) {
     try {
       // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
+      defaultApp = initializeApp(undefined, defaultAppName);
     } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
+      if (process.env.NODE_ENV === 'production') {
+        console.warn(
+          'Automatic initialization failed. Falling back to firebase config object.',
+          e
+        );
       }
-      firebaseApp = initializeApp(firebaseConfig);
+      defaultApp = initializeApp(firebaseConfig, defaultAppName);
     }
-
-    return getSdks(firebaseApp);
   }
 
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
+  // Initialize Master Auth App
+  let authApp = apps.find(app => app.name === authAppName);
+  if (!authApp) {
+    authApp = initializeApp(MASTER_AUTH_CONFIG, authAppName);
+  }
+
+  return getSdks(defaultApp, authApp);
 }
 
-export function getSdks(firebaseApp: FirebaseApp) {
+export function getSdks(defaultApp: FirebaseApp, authApp: FirebaseApp) {
+  const firestore = getFirestore(defaultApp);
+  const auth = getAuth(authApp);
+
+  // Listen for auth state changes to save user profile
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      const userRef = doc(firestore, 'users', user.uid);
+      const profileData = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+      };
+
+      // Use non-blocking setDoc with merge to create/update profile
+      setDoc(userRef, profileData, { merge: true }).catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: userRef.path,
+          operation: 'write',
+          requestResourceData: profileData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+    }
+  });
+
   return {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    firebaseApp: defaultApp,
+    auth,
+    firestore,
   };
 }
 
