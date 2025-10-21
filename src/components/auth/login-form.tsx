@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -59,17 +59,18 @@ export function LoginForm() {
     },
   });
 
-  if (isUserLoading) {
+  useEffect(() => {
+    if (user) {
+      router.push('/');
+    }
+  }, [user, router]);
+
+  if (isUserLoading || user) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
-  }
-
-  if (user) {
-    router.push('/');
-    return null;
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
