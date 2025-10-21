@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Vocalize application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the user."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "Google identifier for the user, if they signed up with Google."
+        },
+        "appleId": {
+          "type": "string",
+          "description": "Apple identifier for the user, if they signed up with Apple."
+        },
+        "gameCenterId": {
+          "type": "string",
+          "description": "Game Center identifier for the user, if applicable."
+        },
+        "anonymousId": {
+          "type": "string",
+          "description": "Anonymous identifier for the user, if they are using the app anonymously."
+        },
+        "smsMultiFactorAuthEnabled": {
+          "type": "boolean",
+          "description": "Indicates if SMS multi-factor authentication is enabled for the user."
+        },
+        "emailVerified": {
+          "type": "boolean",
+          "description": "Indicates if the user's email address has been verified."
+        }
+      },
+      "required": [
+        "id"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  Path-based ownership ensures only the authenticated user can access their own data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching the Firebase Auth UID."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure secure and scalable data management for the Vocalize application, focusing on authorization independence and clear access control.  The primary entity is `User`, with user data stored in a path-based structure under `/users/{userId}`.  This provides simple ownership-based security rules and supports atomic operations. Since there are no collaborative data requirements or other entities, we maintain a flat structure centered around user-owned data."
+  }
+}
