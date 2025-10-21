@@ -52,7 +52,10 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com",
+      "apple.com",
+      "phone"
     ]
   },
   "firestore": {
