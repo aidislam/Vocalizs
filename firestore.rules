@@ -5,63 +5,53 @@
  * This ruleset enforces a strict user-ownership model, where each user can only access their own data.
  *
  * Data Structure:
- * All data is stored under the `/users/{userId}` path, with `userId` matching the Firebase Auth UID.
+ * All user data is stored under the `/users/{userId}` path.
  *
  * Key Security Decisions:
- * - Users can only create, read, update, and delete their own user documents.
- * - Listing all users is disallowed for privacy.
- * - The rules are designed to be authorization-centric, focusing on secure access control, and are flexible on data shapes to allow rapid iteration.
+ * - Users can only create, read, update, and delete their own profile data.
+ * - Listing all users is disallowed to prevent information disclosure.
+ * - Flexible schema on writes is allowed during the prototyping phase.
+ * - Enforces immutability for critical relational fields like `id`.
  *
  * Denormalization for Authorization:
- * The `id` field within each `/users/{userId}` document MUST match the `userId` in the path. This redundancy enables efficient and secure ownership checks without additional database reads.
+ * The User document's `id` field MUST match the `userId` path segment for authorization purposes.  This is enforced on create and immutability is enforced on update.
+ * This ensures that users can only manage their own documents.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profiles. Only the authenticated user can access their own profile.
+     * @description Manages user profiles. Only the authenticated user can manage their own profile.
      * @path /users/{userId}
-     * @allow (create) User with ID 'user123' creates their own profile with matching ID.
-     *    - auth.uid: 'user123'
-     *    - request.resource.data.id: 'user123'
-     * @allow (get) User with ID 'user123' reads their own profile.
-     *    - auth.uid: 'user123'
-     * @allow (update) User with ID 'user123' updates their own profile.
-     *    - auth.uid: 'user123'
-     * @allow (delete) User with ID 'user123' deletes their own profile.
-     *    - auth.uid: 'user123'
-     * @deny (create) User with ID 'user123' attempts to create a profile for 'user456'.
-     *    - auth.uid: 'user123'
-     *    - request.resource.data.id: 'user456'
-     * @deny (get) User with ID 'user123' attempts to read the profile of 'user456'.
-     *    - auth.uid: 'user123'
-     * @principle Enforces document ownership for all operations on user profiles.
+     * @allow (create) - User with UID 'user123' creates their profile at /users/user123 with matching id in the data.
+     * @allow (get) - User with UID 'user123' reads their profile at /users/user123.
+     * @allow (update) - User with UID 'user123' updates their profile at /users/user123, without changing the id.
+     * @allow (delete) - User with UID 'user123' deletes their profile at /users/user123.
+     * @deny (create) - User with UID 'user456' attempts to create a profile at /users/user123.
+     * @deny (get) - User with UID 'user456' attempts to read profile at /users/user123.
+     * @deny (update) - User with UID 'user456' attempts to update the profile at /users/user123.
+     * @deny (delete) - User with UID 'user456' attempts to delete the profile at /users/user123.
+     * @principle Enforces document ownership for all operations and validates relational integrity.
      */
     match /users/{userId} {
-      // Helper function to check if the authenticated user is the owner of the document.
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+      function isSignedIn() {
+        return request.auth != null;
       }
 
-      // Helper function to check if the authenticated user is the existing owner of the document.
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
-      // Allow a user to create their own profile if the ID matches their auth UID.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false; // Listing users is not permitted
 
-      // Allow a user to get their own profile.
-      allow get: if isOwner(userId);
-
-      // Allow a user to list all profiles is disallowed.
-      allow list: if false;
-
-      // Allow a user to update their own profile. The profile must exist to be updated. The id field is immutable.
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-
-      // Allow a user to delete their own profile. The profile must exist to be deleted.
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id; // Enforce immutability of id
       allow delete: if isExistingOwner(userId);
     }
   }
