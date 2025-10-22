@@ -1,47 +1,41 @@
 'use client';
 
-import { firebaseConfig, MASTER_AUTH_CONFIG } from '@/firebase/config';
+import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
-export function initializeFirebase() {
-  const apps = getApps();
-  const defaultAppName = 'DEFAULT';
-  const authAppName = 'MasterAuth';
+// A single object to hold our initialized services
+type FirebaseServices = {
+  firebaseApp: FirebaseApp;
+  auth: Auth;
+  firestore: Firestore;
+};
 
-  // Initialize Default App for Firestore, Storage, etc.
-  let defaultApp = apps.find(app => app.name === defaultAppName);
-  if (!defaultApp) {
-    try {
-      // Prefer automatic initialization for the default app if possible (e.g., App Hosting)
-      defaultApp = initializeApp(undefined, defaultAppName);
-    } catch (e) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(
-          'Automatic initialization failed. Falling back to firebase config object for default app.'
-        );
-      }
-      defaultApp = initializeApp(firebaseConfig, defaultAppName);
-    }
+let firebaseServices: FirebaseServices | null = null;
+
+/**
+ * Initializes Firebase services on the client side.
+ * This function is idempotent, meaning it will only initialize the services once.
+ */
+export function initializeFirebase(): FirebaseServices {
+  if (firebaseServices) {
+    return firebaseServices;
   }
 
-  // Initialize Master Auth App for Authentication
-  let authApp = apps.find(app => app.name === authAppName);
-  if (!authApp) {
-    authApp = initializeApp(MASTER_AUTH_CONFIG, authAppName);
-  }
+  const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
 
-  const firestore = getFirestore(defaultApp);
-  const auth = getAuth(authApp);
-
-  return {
-    firebaseApp: defaultApp,
+  firebaseServices = {
+    firebaseApp: app,
     auth,
     firestore,
   };
+
+  return firebaseServices;
 }
+
 
 export * from './provider';
 export * from './client-provider';

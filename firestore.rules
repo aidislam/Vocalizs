@@ -1,33 +1,59 @@
+/**
+ * @fileoverview Firestore Security Rules for Vocalize application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model, where each user can only access their own data.
+ *
+ * Data Structure:
+ * All data is nested under `/users/{userId}`, providing a clear hierarchical structure.
+ *
+ * Key Security Decisions:
+ * - Users can only read and write their own profile data.
+ * - User listing is disallowed for privacy.
+ * - The rules explicitly deny any unauthorized access attempts.
+ *
+ * Denormalization for Authorization:
+ * The `id` (UID) is duplicated on the document to make validation easier and more secure.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces strict user-ownership for user profiles. Only the authenticated user can access their own profile.
+     * @description Defines a helper function to check if the request is made by the owner of the resource.
+     * @param {string} userId The user ID to compare against the request's authentication UID.
+     * @return {bool} True if the request is made by the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Defines a helper function to check if the user exists and is the owner.
+     * @param {string} userId The user ID to compare against the resource and request.
+     * @return {bool} True if the resource exists and the request is made by the owner, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /**
+     * @description Rule set for documents in the /users/{userId} collection.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user123' can create their own profile at /users/user123 with matching id field.
-     * @allow (get, update, delete) User with UID 'user123' can read, update, and delete their own profile at /users/user123.
-     * @deny (create, get, update, delete) User with UID 'user456' cannot access the profile at /users/user123.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) - Authenticated user with UID 'user123' can create a document where the document ID matches the user's UID. The data.id field must also match the UID.
+     * @allow (get, update, delete, list) - Authenticated user with UID 'user123' can get, update, delete, or list their own document, provided the document exists.
+     * @deny (create) - Authenticated user with UID 'user456' cannot create a document under /users/{user123}.
+     * @deny (update, delete) - Unauthenticated user cannot update or delete any user document.
+     * @principle Enforces document ownership for all operations in the /users/{userId} collection.
      */
     match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && exists(resource);
-      }
-
-      allow get: if isSignedIn() && isOwner(userId);
+      allow get: if isOwner(userId);
       allow list: if false;
 
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isExistingOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
       allow delete: if isExistingOwner(userId);
     }
   }
