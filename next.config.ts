@@ -3,6 +3,15 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  async rewrites() {
+    return [
+      {
+        source: '/images/logo.png',
+        destination:
+          'https://firebasestorage.googleapis.com/v0/b/aid-islam-account.firebasestorage.app/o/Aid%20Islam.png?alt=media&token=edca0541-73e4-4391-aa7b-4caa1f1190a9',
+      },
+    ];
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -40,14 +49,14 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
   devIndicators: {
     allowedDevOrigins: [
-      'https://studio--studio-814518738-6a892.us-central1.hosted.app'
-    ]
-  }
+      'https://studio--studio-814518738-6a892.us-central1.hosted.app',
+    ],
+  },
 };
 
 export default nextConfig;
