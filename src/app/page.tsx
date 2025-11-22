@@ -7,7 +7,7 @@ export default function Home() {
       <div className="w-full max-w-4xl">
         <div className="flex justify-center mb-4">
           <Image
-            src="/images/logo.png"
+            src="https://firebasestorage.googleapis.com/v0/b/aid-islam-account.firebasestorage.app/o/Aid%20Islam.png?alt=media&token=edca0541-73e4-4391-aa7b-4caa1f1190a9"
             alt="Vocalize Logo"
             width={192}
             height={48}
