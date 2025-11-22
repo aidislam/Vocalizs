@@ -43,6 +43,11 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  devIndicators: {
+    allowedDevOrigins: [
+      'https://studio--studio-814518738-6a892.us-central1.hosted.app'
+    ]
+  }
 };
 
 export default nextConfig;
