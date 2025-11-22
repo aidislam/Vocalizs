@@ -56,7 +56,7 @@ export function Header() {
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Image
-              src="https://firebasestorage.googleapis.com/v0/b/aid-islam-account.firebasestorage.app/o/Aid%20Islam.png?alt=media&token=edca0541-73e4-4391-aa7b-4caa1f1190a9"
+              src="/images/logo.png"
               alt="Vocalize Logo"
               width={128}
               height={32}

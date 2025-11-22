@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/images/logo.png',
+        destination: 'https://firebasestorage.googleapis.com/v0/b/aid-islam-account.firebasestorage.app/o/Aid%20Islam.png?alt=media&token=edca0541-73e4-4391-aa7b-4caa1f1190a9',
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {
