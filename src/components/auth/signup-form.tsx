@@ -12,10 +12,8 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   OAuthProvider,
-  User,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { useAuth, useUser, useFirestore } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -38,8 +36,6 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 const formSchema = z
   .object({
@@ -60,7 +56,6 @@ export function SignupForm() {
   const [isAppleLoading, setIsAppleLoading] = useState(false);
   const router = useRouter();
   const auth = useAuth();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
 
@@ -74,10 +69,10 @@ export function SignupForm() {
   });
 
   useEffect(() => {
-    if (user) {
+    if (!isUserLoading && user) {
       router.push('/');
     }
-  }, [user, router]);
+  }, [user, isUserLoading, router]);
 
   if (isUserLoading || user) {
     return (
@@ -86,26 +81,6 @@ export function SignupForm() {
       </div>
     );
   }
-
-  const saveUserProfile = (user: User) => {
-    if (!firestore) return;
-    const userRef = doc(firestore, 'users', user.uid);
-    const profileData = {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      emailVerified: user.emailVerified,
-    };
-    setDoc(userRef, profileData, { merge: true }).catch(serverError => {
-      const permissionError = new FirestorePermissionError({
-        path: userRef.path,
-        operation: 'write',
-        requestResourceData: profileData,
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    });
-  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -119,17 +94,12 @@ export function SignupForm() {
       return;
     }
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-      saveUserProfile(userCredential.user);
+      await createUserWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: 'Account Created',
         description: 'Welcome! You are now logged in.',
       });
-      router.push('/');
+      // The useEffect will handle the redirect
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -156,13 +126,12 @@ export function SignupForm() {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      const userCredential = await signInWithPopup(auth, provider);
-      saveUserProfile(userCredential.user);
+      await signInWithPopup(auth, provider);
       toast({
         title: 'Sign-up Successful',
         description: 'Welcome!',
       });
-      router.push('/');
+      // The useEffect will handle the redirect
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -186,13 +155,12 @@ export function SignupForm() {
     setIsAppleLoading(true);
     const provider = new OAuthProvider('apple.com');
     try {
-      const userCredential = await signInWithPopup(auth, provider);
-      saveUserProfile(userCredential.user);
+      await signInWithPopup(auth, provider);
       toast({
         title: 'Sign-up Successful',
         description: 'Welcome!',
       });
-      router.push('/');
+      // The useEffect will handle the redirect
     } catch (error) {
       toast({
         variant: 'destructive',
