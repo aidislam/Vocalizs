@@ -40,7 +40,6 @@ const nextConfig: NextConfig = {
     formats: ['image/webp'],
     loader: 'default',
     path: '/_next/image',
-    domains: [],
     minimumCacheTTL: 60,
   },
 };
