@@ -42,10 +42,6 @@ const nextConfig: NextConfig = {
     path: '/_next/image',
     domains: [],
     minimumCacheTTL: 60,
-    remotePatterns: [
-      ...[],
-      { protocol: 'data', hostname: '', port: '', pathname: '/**' },
-    ],
   },
 };
 
